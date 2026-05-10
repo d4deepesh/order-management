@@ -50,11 +50,11 @@ public class OrderMapper {
      * Convert client request DTO --> Entity
      * Called in service BEFORE saving to DB
      * Note: id, status, createdAt are not set here.
-     *       They are set by service logic and @PrePersist
+     * They are set by service logic and @PrePersist
      */
 
-    public Order toEntity(OrderRequest request){
-        if(request==null) return null;
+    public Order toEntity(OrderRequest request) {
+        if (request == null) return null;
 
         return Order.builder()
                 .item(request.getItem())
@@ -75,7 +75,7 @@ public class OrderMapper {
      * Controls EXACTLY what the client sees
      */
 
-    public OrderResponse toResponse(Order order){
+    public OrderResponse toResponse(Order order) {
         if (order == null) return null;
 
         return OrderResponse.builder()
