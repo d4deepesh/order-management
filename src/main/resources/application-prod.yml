@@ -35,7 +35,7 @@ spring:
     # password: ${DB_PASSWORD}
     # driver-class-name: org.postgresql.Driver
 
-    url: jdbc:mysql://localhost:3306/user_springdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/order_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -50,12 +50,13 @@ spring:
 
   # ---- JPA / Hibernate ----
   jpa:
+    open-in-view: false
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       # validate: checks schema matches entities -- does NOT modify DB
       # Schema managed by Flyway/Liquibase in prod
       # NEVER use create-drop or update in prod (data loss risk)
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false             # NEVER log SQL in prod (performance + security)
     properties:
       hibernate:
@@ -84,6 +85,15 @@ spring:
   #     resourceserver:
   #       jwt:
   #         issuer-uri: https://your-okta-domain/oauth2/default
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak token issuer
+          issuer-uri: http://localhost:8180/realms/order-realm
+          # Keycloak public keys -- Spring uses to verify JWT signature
+          jwk-set-uri: http://localhost:8180/realms/order-realm/protocol/openid-connect/certs
 
 # ---- Actuator -- restricted in PROD ----
 management:

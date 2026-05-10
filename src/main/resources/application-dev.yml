@@ -26,6 +26,7 @@ spring:
 
   # ---- JPA / Hibernate ----
   jpa:
+    open-in-view: false
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       # create-drop: creates schema on start, drops on stop
@@ -73,7 +74,7 @@ logging:
     com.example.ordermgmt: DEBUG      # our code -- full debug
     org.springframework.web: DEBUG    # Spring MVC request mapping
     org.hibernate.SQL: DEBUG          # every SQL statement
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE         # SQL bind parameters (actual values)
+    org.hibernate.orm.jdbc.bind: TRACE         # SQL bind parameters (actual values)
     org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

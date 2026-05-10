@@ -1,9 +1,16 @@
 package com.example.ordermgmt.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
 
 /**
  * WEB MVC CONFIGURATION (this file is NOT mandatory in a normal Spring Boot project. Your application can work perfectly without it.)
@@ -50,28 +57,28 @@ public class WebConfig implements WebMvcConfigurer {
      * @Primary ensures this is used when Spring injects ObjectMapper
      * without qualifier. The XML ObjectMapper is the secondary one.
      */
-//    @Bean
-//    @Primary
-//    public ObjectMapper objectMapper() {  // custom Jackson ObjectMapper
-//        ObjectMapper mapper = new ObjectMapper();
-//
-//        // Register JavaTimeModule for LocalDate, LocalDateTime etc.
-//        // Without this: LocalDateTime throws InvalidDefinitionException
-//        mapper.registerModule(new JavaTimeModule());
-//
-//        // Write dates as "2026-05-06" not [2026, 5, 6]
-//        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-//
-//        // Silently ignore unknown JSON fields from client
-//        // strict APIs set this to true to reject unexpected fields
-//        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // false --> Ignore unknown fields. // true --> Throw error
-//
-//        // Pretty print JSON (disable in production for performance)
-//        // Useful for: development, debugging
-//        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-//
-//        return mapper;
-//    }
+    @Bean
+    @Primary
+    public ObjectMapper objectMapper() {  // custom Jackson ObjectMapper
+        ObjectMapper mapper = new ObjectMapper();
+
+        // Register JavaTimeModule for LocalDate, LocalDateTime etc.
+        // Without this: LocalDateTime throws InvalidDefinitionException
+        mapper.registerModule(new JavaTimeModule());
+
+        // Write dates as "2026-05-06" not [2026, 5, 6]
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // Silently ignore unknown JSON fields from client
+        // strict APIs set this to true to reject unexpected fields
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // false --> Ignore unknown fields. // true --> Throw error
+
+        // Pretty print JSON (disable in production for performance)
+        // Useful for: development, debugging
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+        return mapper;
+    }
 
 
     /**

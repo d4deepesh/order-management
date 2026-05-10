@@ -14,7 +14,7 @@ server:
 
 spring:
   profiles:
-    default: dev                       # Set default active profile in application.yml
+    default: prod                       # Set default active profile in application.yml
 
   application:
     name: order-management-service    # spring.application.name

@@ -81,32 +81,23 @@ public class GlobalExceptionHandler {
 
         // extract per-field error messages from BindingResult
         ex.getBindingResult().getFieldErrors()
-          .forEach(error -> fieldErrors.put(
-              error.getField(),
-              error.getDefaultMessage()));
+                .forEach(error -> fieldErrors.put(
+                        error.getField(),
+                        error.getDefaultMessage()));
 
         log.warn("Validation failed for {}: {}",
-            request.getRequestURI(), fieldErrors);
+                request.getRequestURI(), fieldErrors);
 
         ErrorResponse response = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
+                .status(400)
                 .error("VALIDATION_FAILED")
-                .message("Input validation failed. " +
-                         "Check fieldErrors for details.")
+                .message("Input validation failed")
                 .fieldErrors(fieldErrors)
                 .path(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
                 .build();
-        // call static of() method sets timestamp automatically
-        response.setStatus(400);
 
-        return ResponseEntity.badRequest()
-                .body(ErrorResponse.builder()
-                    .status(400)
-                    .error("VALIDATION_FAILED")
-                    .message("Input validation failed")
-                    .fieldErrors(fieldErrors)
-                    .path(request.getRequestURI())
-                    .build());
+        return ResponseEntity.badRequest().body(response);
     }
 
     /**
@@ -130,7 +121,7 @@ public class GlobalExceptionHandler {
         });
 
         log.warn("Constraint violation for {}: {}",
-            request.getRequestURI(), errors);
+                request.getRequestURI(), errors);
 
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.builder()
@@ -154,12 +145,12 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Malformed request body for {}: {}",
-            request.getRequestURI(), ex.getMessage());
+                request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(400,
-                    "MALFORMED_REQUEST_BODY",
-                    "Request body is malformed or invalid JSON"));
+                        "MALFORMED_REQUEST_BODY",
+                        "Request body is malformed or invalid JSON"));
     }
 
     /**
@@ -173,13 +164,13 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Missing parameter '{}' for {}",
-            ex.getParameterName(), request.getRequestURI());
+                ex.getParameterName(), request.getRequestURI());
 
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(400,
-                    "MISSING_PARAMETER",
-                    "Required parameter '" + ex.getParameterName()
-                    + "' is missing"));
+                        "MISSING_PARAMETER",
+                        "Required parameter '" + ex.getParameterName()
+                                + "' is missing"));
     }
 
     /**
@@ -193,14 +184,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         String message = String.format(
-            "Parameter '%s' should be of type '%s' but got value '%s'",
-            ex.getName(),
-            ex.getRequiredType() != null
-                ? ex.getRequiredType().getSimpleName() : "unknown",
-            ex.getValue());
+                "Parameter '%s' should be of type '%s' but got value '%s'",
+                ex.getName(),
+                ex.getRequiredType() != null
+                        ? ex.getRequiredType().getSimpleName() : "unknown",
+                ex.getValue());
 
         log.warn("Type mismatch for {}: {}", request.getRequestURI(),
-            message);
+                message);
 
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(400, "TYPE_MISMATCH", message));
@@ -217,11 +208,11 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Business rule violation for {}: {}",
-            request.getRequestURI(), ex.getMessage());
+                request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ErrorResponse.of(422,
-                    "BUSINESS_RULE_VIOLATION", ex.getMessage()));
+                        "BUSINESS_RULE_VIOLATION", ex.getMessage()));
     }
 
     // ----------------------------------------------------------------
@@ -237,14 +228,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Order not found: {} for request {}",
-            ex.getMessage(), request.getRequestURI());
+                ex.getMessage(), request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(404, "NOT_FOUND",
-                    ex.getMessage()));
+                        ex.getMessage()));
     }
 
-    /**
+    /*
      * No controller method found for the URI
      * Wrong URL -- endpoint does not exist
      * Requires spring.mvc.throw-exception-if-no-handler-found=true
@@ -256,12 +247,12 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("No handler found: {} {}",
-            ex.getHttpMethod(), ex.getRequestURL());
+                ex.getHttpMethod(), ex.getRequestURL());
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(404, "ENDPOINT_NOT_FOUND",
-                    "No endpoint: " + ex.getHttpMethod()
-                    + " " + ex.getRequestURL()));
+                        "No endpoint: " + ex.getHttpMethod()
+                                + " " + ex.getRequestURL()));
     }
 
     // ----------------------------------------------------------------
@@ -283,14 +274,14 @@ public class GlobalExceptionHandler {
                 : "unknown";
 
         log.warn("Method not allowed: {} {} | Allowed: {}",
-            ex.getMethod(), request.getRequestURI(), allowedMethods);
+                ex.getMethod(), request.getRequestURI(), allowedMethods);
 
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 // Allow header is REQUIRED by HTTP spec for 405
                 .header("Allow", allowedMethods)
                 .body(ErrorResponse.of(405, "METHOD_NOT_ALLOWED",
-                    "HTTP method " + ex.getMethod()
-                    + " is not supported. Allowed: " + allowedMethods));
+                        "HTTP method " + ex.getMethod()
+                                + " is not supported. Allowed: " + allowedMethods));
     }
 
     // ----------------------------------------------------------------
@@ -307,12 +298,12 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Not acceptable media type for {}: {}",
-            request.getRequestURI(), ex.getMessage());
+                request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                 .body(ErrorResponse.of(406, "NOT_ACCEPTABLE",
-                    "Requested media type cannot be produced. " +
-                    "Use Accept: application/json or application/xml"));
+                        "Requested media type cannot be produced. " +
+                                "Use Accept: application/json or application/xml"));
     }
 
     // ----------------------------------------------------------------
@@ -329,11 +320,11 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Order status conflict for {}: {}",
-            request.getRequestURI(), ex.getMessage());
+                request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of(409, "STATUS_CONFLICT",
-                    ex.getMessage()));
+                        ex.getMessage()));
     }
 
 
@@ -351,13 +342,13 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         log.warn("Unsupported media type '{}' for {}",
-            ex.getContentType(), request.getRequestURI());
+                ex.getContentType(), request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(ErrorResponse.of(415,
-                    "UNSUPPORTED_MEDIA_TYPE",
-                    "Content-Type '" + ex.getContentType()
-                    + "' is not supported. Use application/json"));
+                        "UNSUPPORTED_MEDIA_TYPE",
+                        "Content-Type '" + ex.getContentType()
+                                + "' is not supported. Use application/json"));
     }
 
     // ----------------------------------------------------------------
@@ -378,15 +369,15 @@ public class GlobalExceptionHandler {
 
         // log full stack trace server-side
         log.error("Unhandled exception for {} {}: {}",
-            request.getMethod(),
-            request.getRequestURI(),
-            ex.getMessage(), ex);
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getMessage(), ex);
 
         // return generic message to client (no stack trace)
         return ResponseEntity.internalServerError()
                 .body(ErrorResponse.of(500,
-                    "INTERNAL_SERVER_ERROR",
-                    "An unexpected error occurred. " +
-                    "Please try again or contact support."));
+                        "INTERNAL_SERVER_ERROR",
+                        "An unexpected error occurred. " +
+                                "Please try again or contact support."));
     }
 }
