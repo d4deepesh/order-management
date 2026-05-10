@@ -4,6 +4,9 @@ package com.example.ordermgmt.entity;
 import com.example.ordermgmt.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -39,10 +42,19 @@ import java.time.LocalDateTime;
 @Table(name="orders")
 @Getter
 @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // Required by JPA (a no-argument constructor. Without it → runtime error.)
 @AllArgsConstructor
 @Builder
+
+// PROTECTED: Hibernate uses reflection -- access level irrelevant to JPA
+// Application code CANNOT do: new Order() -- must use Builder
+// @NoArgsConstructor --> Required by JPA (a no-argument constructor. Without it → runtime error.)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
+
+// REQUIRED: tells Spring Data to apply auditing to this entity
+// AuditingEntityListener intercepts JPA lifecycle events
+// and populates @CreatedDate, @LastModifiedDate automatically
+@EntityListeners(AuditingEntityListener.class)
 public class Order {
 
     @Id
@@ -82,10 +94,18 @@ public class Order {
     @Column(name = "remarks", length = 500)
     private String remarks;
 
-    // audit fields -- set by service, never by client
-    @Column(name = "created_at", nullable = false, updatable = false)
+    // AUDIT FIELDS -- Spring Data sets these automatically
+
+    // set ONCE on INSERT, never updated
+    // updatable = false --> Hibernate never includes in UPDATE SQL
+    @CreatedDate
+    @Column(name = "created_at",
+            nullable = false,
+            updatable = false)
     private LocalDateTime createdAt;
 
+    // set on INSERT, updated on every UPDATE automatically
+    @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
@@ -95,18 +115,4 @@ public class Order {
         if (qty == null || price == null) return 0.0;
         return qty * price;
     }
-
-    // JPA lifecycle callbacks -- auto-set audit fields
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.status = (this.status == null)
-                ? OrderStatus.PENDING : this.status;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
 }

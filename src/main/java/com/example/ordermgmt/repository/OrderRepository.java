@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,9 +16,9 @@ import java.util.List;
 /**
  * ORDER REPOSITORY
  *
- * Concept: Data Access Layer --Only talks to database
+ * CONCEPT: Data Access Layer -- ONLY talks to database
  *
- * INTERVIEW POINTS
+ * INTERVIEW POINTS:
  *
  * JpaRepository<Entity, PrimaryKeyType> provides:
  *   save(entity)         --> INSERT or UPDATE
@@ -28,7 +29,7 @@ import java.util.List;
  *   existsById(id)       --> SELECT COUNT(*) > 0
  *   count()              --> SELECT COUNT(*)
  *
- * @Repository is OPTIONAL on JpaRepository interfaces
+ * @Repository is OPTIONAL on JpaRepository interfaces.
  * Spring Data auto-detects and creates proxy implementation.
  * @Repository adds exception translation (wraps SQL exceptions
  * into Spring DataAccessException hierarchy).
@@ -49,17 +50,19 @@ import java.util.List;
  *   Slice --> 1 query: data only         -- only hasNext()
  *   Use Slice for infinite scroll (no total count needed = faster)
  */
-public interface OrderRepository extends JpaRepository<Order, Long> {
+@Repository
+public interface OrderRepository
+        extends JpaRepository<Order, Long> {
 
-    // ---- Method name Derived Queries
+    // ---- Method Name Derived Queries ----
 
-    // Spring Data JPA reads the method name and automatically builds SQL like:
     // SELECT * FROM orders WHERE status = ?
-    // + COUNT(*) FROM order WHERE status = ? (for Page)
-    Page<Order> findByStatus (OrderStatus status, Pageable pageable);
+    // + COUNT(*) FROM orders WHERE status = ?  (for Page)
+    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
     // SELECT * FROM orders WHERE customer_email = ?
-    Page<Order> findByCustomerEmail(String customerEmail, Pageable pageable);
+    Page<Order> findByCustomerEmail(
+            String customerEmail, Pageable pageable);
 
     // SELECT * FROM orders WHERE status = ? AND customer_email = ?
     Page<Order> findByStatusAndCustomerEmail(
@@ -68,26 +71,25 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // SELECT COUNT(*) FROM orders WHERE customer_email = ?
     long countByCustomerEmail(String customerEmail);
 
-    // SELECT * FROM orders WHERE customer_email=? ORDER BY created_at DESC
-    List<Order> findByCustomerEmailOrderByCreatedAtDesc();
+    // SELECT * FROM orders WHERE customer_email = ? ORDER BY created_at DESC
+    List<Order> findByCustomerEmailOrderByCreatedAtDesc(
+            String customerEmail);
 
     // SELECT count > 0 FROM orders WHERE item = ? AND status = ?
     boolean existsByItemAndStatus(String item, OrderStatus status);
-
 
     // ---- Custom JPQL Queries ----
 
     /**
      * JPQL (Java Persistence Query Language)
-     * Operates on ENTITY names & FIELD names (not table/column names)
+     * Operates on ENTITY names and FIELD names (not table/column names)
      * o.price refers to Order.price field, not the DB column
      */
-
     @Query("SELECT o FROM Order o " +
             "WHERE o.price > :minPrice " +
             "AND o.status = :status " +
             "ORDER BY o.price DESC")
-    List<Order> findExpensiveOrderByStatus(
+    List<Order> findExpensiveOrdersByStatus(
             @Param("minPrice") Double minPrice,
             @Param("status") OrderStatus status);
 
@@ -110,6 +112,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             Pageable pageable);
 
     // ---- Native SQL Query ----
+
     /**
      * nativeQuery = true: raw SQL (uses table/column names not entity names)
      * Use only when JPQL cannot express the query
@@ -123,7 +126,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     )
     List<Order> findOrdersCreatedAfter(
             @Param("fromDate") LocalDateTime fromDate);
-
 
     // ---- Modifying Query (UPDATE/DELETE) ----
 

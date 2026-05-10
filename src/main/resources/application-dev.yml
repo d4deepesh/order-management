@@ -1,0 +1,88 @@
+# ============================================================
+# application-dev.yml
+# DEV profile -- local development only
+#
+# Activate: -Dspring.profiles.active=dev
+#
+# DEV characteristics:
+# - H2 in-memory DB (no external DB needed)
+# - SQL logging enabled (see all generated queries)
+# - H2 console enabled (visual DB browser)
+# - Pretty-print JSON (readable responses)
+# - DEBUG logging (verbose)
+# - Basic auth (no real OAuth2 setup needed)
+# - Relaxed security (H2 console accessible)
+# - Smaller thread pool (local machine)
+# ============================================================
+
+spring:
+
+  # ---- H2 In-Memory Database (DEV only) ----
+  datasource:
+    url: jdbc:h2:mem:orderdb                # in-memory DB (resets on restart)
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+
+  # ---- JPA / Hibernate ----
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      # create-drop: creates schema on start, drops on stop
+      # Good for DEV -- always fresh DB
+      # NEVER use in prod (destroys data on restart)
+      ddl-auto: create-drop
+    show-sql: true          # logs every SQL query to console (dev only)
+    properties:
+      hibernate:
+        format_sql: true    # pretty-print SQL (readable in logs)
+
+  # ---- H2 Console (DEV only) ----
+  # Access at: http://localhost:8080/h2-console
+  # JDBC URL: jdbc:h2:mem:orderdb
+  # Username: sa | Password: password
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # ---- Pretty Print JSON (DEV only) ----
+  jackson:
+    serialization:
+      indent-output: true   # human-readable JSON in DEV
+
+  # ---- Basic Auth (DEV only -- simple, no OAuth2 setup) ----
+  security:
+    user:
+      name: admin
+      password: admin123
+
+# ---- Actuator -- expose everything in DEV ----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"        # expose ALL actuator endpoints in DEV
+  endpoint:
+    health:
+      show-details: always  # show full health details in DEV
+
+# ---- Logging -- verbose in DEV ----
+logging:
+  level:
+    com.example.ordermgmt: DEBUG      # our code -- full debug
+    org.springframework.web: DEBUG    # Spring MVC request mapping
+    org.hibernate.SQL: DEBUG          # every SQL statement
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE         # SQL bind parameters (actual values)
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# ---- App overrides for DEV ----
+app:
+  async:
+    core-pool-size: 2       # smaller pool -- local machine
+    max-pool-size: 5
+    queue-capacity: 20
+  notification:
+    email-enabled: false    # do not send real emails in DEV

@@ -1,89 +1,59 @@
 # ============================================================
 # application.yml
-# Central configuration file for Order Management System
-# Demonstrates: @ConfigurationProperties, Spring Boot config
+# COMMON configuration -- loaded for ALL profiles
+# Profile-specific files OVERRIDE values defined here
+#
+# Active profile set via:
+#   IntelliJ: VM options: -Dspring.profiles.active=dev
+#   Command line: java -jar app.jar --spring.profiles.active=prod
+#   Environment variable: SPRING_PROFILES_ACTIVE=prod
 # ============================================================
 
 server:
   port: 8080
-  servlet:
-    context-path: /                  # base path for all endpoints
 
 spring:
+  profiles:
+    default: dev                       # Set default active profile in application.yml
+
   application:
-    name: order-management-service   # spring.application.name
+    name: order-management-service    # spring.application.name
 
-    # ---- H2 In-Memory Database ----
-    datasource:
-      url: jdbc:h2:mem:orderdb          # in-memory DB (resets on restart)
-      driver-class-name: org.h2.Driver
-      username: sa
-      password: password
+  # ---- Jackson (HttpMessageConverter config) ----
+  # Common for all profiles
+  #jackson:
+  #  serialization:
+  #    write-dates-as-timestamps: false    # "2026-05-06" not [2026,5,6]
+  #  deserialization:
+  #    fail-on-unknown-properties: false   # ignore extra fields from client
+#    default-property-inclusion: NON_NULL  # skip null fields in response
 
-    # ---- JPA / Hibernate ----
-    jpa:
-      database-platform: org.hibernate.dialect.H2Dialect
-      hibernate:
-        ddl-auto: create-drop           # create tables on start, drop on stop
-      show-sql: true                    # logs SQL in console (dev only)
-      properties:
-        hibernate:
-          format_sql: true              # pretty-print SQL
+# ---- Actuator ----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
 
-    # ---- H2 Console (dev only) ----
-    h2:
-      console:
-        enabled: true
-        path: /h2-console               # access at http://localhost:8080/h2-console
+# ============================================================
+# Custom Application Properties
+# Bound via @ConfigurationProperties(prefix = "app")
+# Common defaults -- overridden per profile if needed
+# ============================================================
+app:
 
-    # ---- Jackson (HttpMessageConverter config) ----
-    jackson:
-      serialization:
-        write-dates-as-timestamps: false  # dates as "2026-05-06" not [2026,5,6]
-        indent-output: true               # pretty print JSON responses
-      deserialization:
-        fail-on-unknown-properties: false # ignore extra fields from client
-      default-property-inclusion: non_null # skip null fields in response
+  order:
+    max-page-size: 50               # max allowed page size in pagination
+    default-page-size: 10           # default page size
+    allowed-sort-fields: id,createdAt,price,status  # whitelist for sort
+    min-order-value: 100.0          # minimum order total value
 
-    # ---- Security (basic for demo) ----
-    security:
-      user:
-        name: admin
-        password: admin123
+  async:
+    core-pool-size: 5               # ThreadPoolTaskExecutor core threads
+    max-pool-size: 20               # max threads
+    queue-capacity: 100             # queue before spawning beyond core
+    thread-name-prefix: order-async-
 
-  # ---- Actuator ----
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: health, info, metrics, refresh
-
-  # ============================================================
-  # Custom Application Properties
-  # Bound via @ConfigurationProperties(prefix = "app")
-  # ============================================================
-  app:
-    order:
-      max-page-size: 50               # max allowed page size in pagination
-      default-page-size: 10           # default page size
-      allowed-sort-fields: id,createdAt,price,status  # whitelist for sort
-      min-order-value: 100.0          # minimum order total value
-
-    async:
-      core-pool-size: 5               # ThreadPoolTaskExecutor core threads
-      max-pool-size: 20               # max threads
-      queue-capacity: 100             # queue before spawning beyond core
-      thread-name-prefix: order-async-
-
-    notification:
-      email-enabled: true
-      retry-attempts: 3
-
-  # ---- Logging ----
-  logging:
-    level:
-      com.example.ordermgmt: DEBUG    # our package at DEBUG level
-      org.springframework.web: INFO
-      org.hibernate.SQL: DEBUG
-    pattern:
-      console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  notification:
+    email-enabled: true
+    retry-attempts: 3

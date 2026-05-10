@@ -1,0 +1,127 @@
+# ============================================================
+# application-prod.yml
+# PROD profile -- production environment
+#
+# Activate: -Dspring.profiles.active=prod
+#   OR environment variable: SPRING_PROFILES_ACTIVE=prod
+#
+# PROD characteristics:
+# - Real PostgreSQL DB (not H2)
+# - No SQL logging (performance + security)
+# - No H2 console (security risk)
+# - Compact JSON (no pretty print -- less bandwidth)
+# - Only ERROR/WARN logging (less I/O overhead)
+# - Restricted actuator endpoints (no heap dump exposed)
+# - Larger thread pool (production load)
+# - DB credentials from environment variables (never hardcoded)
+#
+# SECURITY RULES FOR PROD:
+# - Never hardcode passwords in yml files
+# - Use environment variables or Vault
+# - ${DB_PASSWORD} reads from OS environment variable DB_PASSWORD
+# ============================================================
+
+spring:
+
+  # ---- PostgreSQL/MySQL (PROD -- real database) ----
+  datasource:
+    # Read from environment variables -- never hardcode in prod
+    # Set these in your server / Docker / Kubernetes environment:
+    #   export DB_URL=jdbc:postgresql://localhost:5432/orderdb
+    #   export DB_USERNAME=orderuser
+    #   export DB_PASSWORD=secretpassword
+    # url: ${DB_URL}
+    # username: ${DB_USERNAME}
+    # password: ${DB_PASSWORD}
+    # driver-class-name: org.postgresql.Driver
+
+    url: jdbc:mysql://localhost:3306/user_springdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # ---- Connection Pool (HikariCP -- Spring Boot default) ----
+    hikari:
+      minimum-idle: 5           # min idle connections in pool
+      maximum-pool-size: 20     # max total connections
+      idle-timeout: 300000      # close idle connection after 5 min
+      connection-timeout: 20000 # fail fast if no connection in 20s
+      pool-name: OrderHikariPool
+
+  # ---- JPA / Hibernate ----
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      # validate: checks schema matches entities -- does NOT modify DB
+      # Schema managed by Flyway/Liquibase in prod
+      # NEVER use create-drop or update in prod (data loss risk)
+      ddl-auto: validate
+    show-sql: false             # NEVER log SQL in prod (performance + security)
+    properties:
+      hibernate:
+        format_sql: false
+        # batch inserts for better performance
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # ---- H2 Console DISABLED in PROD ----
+  # H2 is not used in prod -- PostgreSQL is used instead
+  # Never expose H2 console in prod (security vulnerability)
+
+  # ---- Compact JSON (no pretty print -- saves bandwidth) ----
+  jackson:
+    serialization:
+      indent-output: false      # compact JSON in prod
+
+  # ---- Security (prod uses real OAuth2 / Okta / JWT) ----
+  # Do NOT use spring.security.user in prod
+  # Configure proper OAuth2 resource server here
+  # Example with Okta:
+  # security:
+  #   oauth2:
+  #     resourceserver:
+  #       jwt:
+  #         issuer-uri: https://your-okta-domain/oauth2/default
+
+# ---- Actuator -- restricted in PROD ----
+management:
+  endpoints:
+    web:
+      exposure:
+        # expose only safe endpoints in prod
+        # NEVER expose heapdump, threaddump, env, beans in prod
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: never       # hide health details from public
+      # details visible to authenticated only
+
+# ---- Logging -- minimal in PROD ----
+logging:
+  level:
+    com.example.ordermgmt: INFO       # INFO only -- not DEBUG
+    org.springframework.web: WARN     # only warnings
+    org.hibernate.SQL: OFF            # NO SQL logging in prod
+    org.springframework: WARN
+  # In prod: write to file, not just console
+  file:
+    name: /var/log/order-management/app.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30               # keep 30 days of logs
+      file-name-pattern: /var/log/order-management/app-%d{yyyy-MM-dd}.%i.log
+
+# ---- App overrides for PROD ----
+app:
+  async:
+    core-pool-size: 10          # larger pool for prod load
+    max-pool-size: 50
+    queue-capacity: 500
+  order:
+    max-page-size: 50           # enforce strict limit in prod
+  notification:
+    email-enabled: true         # real emails in prod
+    retry-attempts: 5           # more retries in prod
