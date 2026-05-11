@@ -14,6 +14,10 @@ import com.example.ordermgmt.repository.OrderRepository;
 import com.example.ordermgmt.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -73,11 +77,23 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final AppProperties appProperties;
 
+
+    // cache name constants
+    private static final String CACHE_ORDER = "order";
+    private static final String CACHE_ORDERS = "orders";
+
+    /**
+     * @Cacheable:
+     * First call  --> hits DB, stores result in cache
+     * Second call --> returns from cache, DB NOT hit
+     * Cache key   --> "order::1" (cache name + id)
+     */
+
     // ----------------------------------------------------------------
     // CREATE
     // ----------------------------------------------------------------
 
-    /*
+    /**
      * POST /orders
      *
      * FLOW:
@@ -89,8 +105,13 @@ public class OrderServiceImpl implements OrderService {
      * 6. Return DTO (never Entity)
      *
      * @Transactional (inherited from class): begins here, commits on return
+
+     * @CachePut -- updates cache when new order is created
+     * Cache always has latest data
      */
     @Override
+    @CachePut(value = CACHE_ORDER, key = "#result.id")
+    @CacheEvict(value = CACHE_ORDERS, allEntries = true)
     public OrderResponse createOrder(OrderRequest request) {
         log.debug("createOrder called for item: {}", request.getItem());
 
@@ -129,7 +150,7 @@ public class OrderServiceImpl implements OrderService {
     // READ ONE
     // ----------------------------------------------------------------
 
-    /*
+    /**
      * GET /orders/{id}
      *
      * @Transactional(readOnly=true):
@@ -137,9 +158,15 @@ public class OrderServiceImpl implements OrderService {
      * - Faster: no flush needed before query
      * - Allows DB to optimize for read-only connection
      * - Route to read replica in primary-replica setups
+
+     * @Cacheable:
+     * First call  --> hits DB, stores result in cache
+     * Second call --> returns from cache, DB NOT hit
+     * Cache key   --> "order::1" (cache name + id)
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = CACHE_ORDER, key = "#id")
     public OrderResponse getOrderById(Long id) {
         log.debug("getOrderById called for id: {}", id);
 
@@ -156,7 +183,7 @@ public class OrderServiceImpl implements OrderService {
     // READ ALL WITH PAGINATION
     // ----------------------------------------------------------------
 
-    /*
+    /**
      * GET /orders?status=PENDING&page=0&size=10&sortBy=createdAt&sortDir=desc
      *
      * PAGINATION INTERNALS:
@@ -173,6 +200,11 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            value = CACHE_ORDERS,
+            key = "#status + '_' + #email + '_' + #page + '_' + #size + '_' + #sortBy + '_' + #sortDir",
+            condition = "#page == 0 && #size <= 20"  // only cache first pages, small sizes
+    )
     public PagedResponse<OrderResponse> getAllOrders(
             String status,
             String email,
@@ -259,7 +291,7 @@ public class OrderServiceImpl implements OrderService {
     // FULL UPDATE (PUT)
     // ----------------------------------------------------------------
 
-    /*
+    /**
      * PUT /orders/{id}
      *
      * PUT semantics: FULL REPLACE
@@ -270,8 +302,15 @@ public class OrderServiceImpl implements OrderService {
      * After findById(), the entity is MANAGED by Hibernate.
      * Changes to it are detected automatically (dirty checking).
      * No explicit save() call needed -- Hibernate flushes on commit.
+     *
+     * @CacheEvict -- removes cached entry when order is updated
+     * Prevents stale data from being returned
      */
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CACHE_ORDER, key = "#id"),
+            @CacheEvict(value = CACHE_ORDERS, allEntries = true)
+    })
     public OrderResponse updateOrder(Long id, OrderRequest request) {
         log.debug("updateOrder called for id: {}", id);
 
@@ -311,6 +350,10 @@ public class OrderServiceImpl implements OrderService {
      * for more formal PATCH semantics.
      */
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CACHE_ORDER, key = "#id"),
+            @CacheEvict(value = CACHE_ORDERS, allEntries = true)
+    })
     public OrderResponse patchOrder(Long id,
                                     Map<String, Object> fields) {
         log.debug("patchOrder called for id: {} with fields: {}",
@@ -355,6 +398,10 @@ public class OrderServiceImpl implements OrderService {
      * (deleteById silently does nothing if ID not found)
      */
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CACHE_ORDER, key = "#id"),
+            @CacheEvict(value = CACHE_ORDERS, allEntries = true)
+    })
     public void deleteOrder(Long id) {
         log.debug("deleteOrder called for id: {}", id);
 
@@ -382,6 +429,10 @@ public class OrderServiceImpl implements OrderService {
      * CANCELLED  --> (terminal -- no further transitions)
      */
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = CACHE_ORDER, key = "#id"),
+            @CacheEvict(value = CACHE_ORDERS, allEntries = true)
+    })
     public OrderResponse updateOrderStatus(Long id,
                                            OrderStatus newStatus) {
         log.debug("updateOrderStatus: id={}, newStatus={}", id, newStatus);

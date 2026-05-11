@@ -62,3 +62,32 @@ public class ProdSecurityConfig {
         return http.build();
     }
 }
+
+/**
+ * SECURITY CONFIG -- JWT / OAuth2 Resource Server
+ *
+ * CONCEPT:
+ * Our Spring Boot app = Resource Server
+ * Keycloak = Authorization Server (issues JWT tokens)
+ *
+ * FLOW:
+ * 1. Client sends username+password to Keycloak
+ * 2. Keycloak returns JWT access token
+ * 3. Client sends JWT in Authorization header to our app
+ * 4. Our app validates JWT using Keycloak public keys
+ * 5. If valid --> request proceeds to controller
+ * 6. If invalid --> 401 Unauthorized
+ *
+ * INTERVIEW POINTS:
+ * JWT = JSON Web Token
+ *   Header: algorithm used (RS256)
+ *   Payload: user info, roles, expiry
+ *   Signature: signed by Keycloak private key
+ *              verified by Keycloak public key (jwks_uri)
+ *
+ * Resource Server never stores sessions
+ * Stateless -- each request carries JWT
+ * JWT verified locally using public keys
+ * No round trip to Keycloak per request
+ * Public keys cached -- fetched once from jwks_uri
+ */

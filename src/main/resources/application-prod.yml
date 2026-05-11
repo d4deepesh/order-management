@@ -47,6 +47,8 @@ spring:
       idle-timeout: 300000      # close idle connection after 5 min
       connection-timeout: 20000 # fail fast if no connection in 20s
       pool-name: OrderHikariPool
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
 
   # ---- JPA / Hibernate ----
   jpa:
@@ -56,7 +58,7 @@ spring:
       # validate: checks schema matches entities -- does NOT modify DB
       # Schema managed by Flyway/Liquibase in prod
       # NEVER use create-drop or update in prod (data loss risk)
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false             # NEVER log SQL in prod (performance + security)
     properties:
       hibernate:
@@ -95,6 +97,14 @@ spring:
           # Keycloak public keys -- Spring uses to verify JWT signature
           jwk-set-uri: http://localhost:8180/realms/order-realm/protocol/openid-connect/certs
 
+keycloak:
+  warmup:
+    token-uri: ${KEYCLOAK_ISSUER_URI}   # in edit or run configuration , environment variables
+    client-id: ${KEYCLOAK_CLIENT_ID}
+    client-secret: ${KEYCLOAK_CLIENT_SECRET}
+    username: ${KEYCLOAK_WARMUP_USER}
+    password: ${KEYCLOAK_WARMUP_PASS}
+
 # ---- Actuator -- restricted in PROD ----
 management:
   endpoints:
@@ -115,6 +125,9 @@ logging:
     org.springframework.web: WARN     # only warnings
     org.hibernate.SQL: OFF            # NO SQL logging in prod
     org.springframework: WARN
+    com.zaxxer.hikari: WARN                          # shows connection acquisition time
+    org.springframework.security: DEBUG               # shows JWT decode time
+    org.springframework.transaction: DEBUG            # shows transaction open time
   # In prod: write to file, not just console
   file:
     name: /var/log/order-management/app.log

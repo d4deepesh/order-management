@@ -39,7 +39,18 @@ import java.time.LocalDateTime;
  */
 
 @Entity
-@Table(name="orders")
+@Table(name = "orders",
+    indexes = {
+        @Index(name = "idx_orders_status",
+               columnList = "status"),
+        @Index(name = "idx_orders_customer_email",
+               columnList = "customer_email"),
+        @Index(name = "idx_orders_created_at",
+               columnList = "created_at"),
+        @Index(name = "idx_orders_status_email",
+               columnList = "status, customer_email")
+    }
+)
 @Getter
 @Setter
 @AllArgsConstructor
