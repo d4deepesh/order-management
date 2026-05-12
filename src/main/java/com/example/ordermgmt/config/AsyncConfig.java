@@ -86,7 +86,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setCorePoolSize(asyncProps.getCorePoolSize());
 
         // max threads created when queue is full
-        executor.setMaxPoolSize(asyncProps.getQueueCapacity());
+        executor.setMaxPoolSize(asyncProps.getMaxPoolSize());
 
         // queue tasks when all core threads are busy
         executor.setQueueCapacity(asyncProps.getQueueCapacity());

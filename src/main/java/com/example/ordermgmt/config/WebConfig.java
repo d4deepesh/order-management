@@ -1,5 +1,6 @@
 package com.example.ordermgmt.config;
 
+import com.example.ordermgmt.interceptor.AuditInterceptor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -9,16 +10,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
 /**
  * WEB MVC CONFIGURATION (this file is NOT mandatory in a normal Spring Boot project. Your application can work perfectly without it.)
- * <p>
+ *
  * This class exists because someone wants to customize Spring MVC + Jackson behavior explicitly.
- * <p>
+ *
  * CONCEPT: Customizes Spring MVC Behavior. “Customize how Spring converts HTTP ↔ Java objects.”
- * <p>
+ *
  * This config file customizes:
  * | Feature             | Why customize?                  |
  * | ------------------- | ------------------------------- |
@@ -27,22 +29,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * | XML support         | JSON + XML APIs                 |
  * | Content negotiation | `Accept` header / `?format=`    |
  * | ObjectMapper        | centralized serialization rules |
- * <p>
+ *
  * INTERVIEW POINTS:
- * <p>
+ *
  * HttpMessageConverter:
  * - Converts Java object <--> HTP body (JSON, XML, etc)
  * - MappingJackson2HttpMessageConverter    handles application/json
  * - MappingJackson2XmlHttpMessageConverter handles application/xml
  * - Selection based on Content-Type (read) and Accept header (write)
- * <p>
+ *
  * Content Negotiation:
  * - Process of selecting response format based on client preference
  * - Client sends: Accept: application/json or Accept: application/xml
  * - Server checks: what formats can this endpoint produce?
  * - Intersection determines format
  * - No match --> 406 Not Acceptable
- * <p>
+ *
  * ObjectMapper(@Primary)
  * - Central Jackson class for JSON serialization/deserialization
  * - Expensive to create -- always singleton (Spring manages this)
@@ -83,20 +85,20 @@ public class WebConfig implements WebMvcConfigurer {
 
     /**
      * Content Negotiation Configuration
-     * <p>
+     *
      * INTERVIEW POINTS:
-     * <p>
+     *
      * Strategy 1: Accept Header (DEFAULT, recommended)
      * GET /orders/101 + Accept: application/xml --> XML response
-     * <p>
+     *
      * Strategy 2: URL Parameter
      * GET /orders/101?format=json --> JSON
      * GET /orders/101?format=xml  --> XML
      * Useful when client cannot set headers
-     * <p>
+     *
      * Strategy 3: URL Extension (.json, .xml) -- DEPRECATED in Spring 5.3
      * Security risk (RFD attacks) -- do NOT use in new projects
-     * <p>
+     *
      * defaultContentType: used when no Accept header and no format param
      */
     @Override

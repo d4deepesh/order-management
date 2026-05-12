@@ -46,13 +46,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OrderMapper {
+
     /**
      * Convert client request DTO --> Entity
      * Called in service BEFORE saving to DB
      * Note: id, status, createdAt are not set here.
      * They are set by service logic and @PrePersist
      */
-
     public Order toEntity(OrderRequest request) {
         if (request == null) return null;
 
@@ -74,7 +74,6 @@ public class OrderMapper {
      * Called in service AFTER DB operation
      * Controls EXACTLY what the client sees
      */
-
     public OrderResponse toResponse(Order order) {
         if (order == null) return null;
 
