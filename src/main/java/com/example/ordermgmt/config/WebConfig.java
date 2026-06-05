@@ -114,3 +114,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .defaultContentType(MediaType.APPLICATION_JSON);
     }
 }
+// Configure `ContentNegotiationConfigurer` with `favorParameter(true)` and map `format=json` to `application/json`.
+// This is useful for browser clients or legacy systems that cannot set request headers.
+// The Accept header strategy takes priority by default when both are configured.
